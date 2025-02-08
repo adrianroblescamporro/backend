@@ -1,4 +1,4 @@
-from sqlalchemy import Column, Integer, String, Text, TIMESTAMP, func
+from sqlalchemy import Column, Integer, String, Text, Boolean, TIMESTAMP, func
 from sqlalchemy.ext.declarative import declarative_base
 
 Base = declarative_base()
@@ -10,5 +10,9 @@ class IoC(Base):
     id = Column(Integer, primary_key=True, index=True)
     tipo = Column(String(50), nullable=False)
     valor = Column(Text, unique=True, nullable=False)
-    estado = Column(String(20), nullable=False)
+    cliente = Column(String(20), index=True)  # Cliente en el que se detecta el IoC
+    categoria = Column(String(50), index=True)  # Phishing, ransomware, etc.
+    pertenece_a_incidente = Column(Boolean, default=False)  # ¿Pertenece a un incidente?
+    criticidad = Column(String(20), index=True)  # Alta, Media, Baja
+    usuario_registro = Column(String(20), index=True)
     fecha_creacion = Column(TIMESTAMP, server_default=func.now())

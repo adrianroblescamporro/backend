@@ -4,7 +4,11 @@ from datetime import datetime
 class IoCBase(BaseModel):
     tipo: str
     valor: str
-    estado: str
+    cliente: str
+    categoria: str
+    pertenece_a_incidente: bool
+    criticidad: str
+    usuario_registro: str
 
 class IoCCreate(IoCBase):
     pass
