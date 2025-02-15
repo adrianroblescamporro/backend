@@ -1,9 +1,9 @@
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 from datetime import datetime
 
 class IoCBase(BaseModel):
     tipo: str
-    valor: str
+    valor: str = Field(..., min_length=1, max_length=255, pattern=r"^[a-zA-Z0-9._\-/:]+$")
     cliente: str
     categoria: str
     tecnologia_deteccion: str
