@@ -6,16 +6,17 @@ class IoCBase(BaseModel):
     valor: str
     cliente: str
     categoria: str
+    tecnologia_deteccion: str
     pertenece_a_incidente: bool
     criticidad: str
     usuario_registro: str
+    fecha_creacion: datetime
 
 class IoCCreate(IoCBase):
     pass
 
 class IoCResponse(IoCBase):
     id: int
-    fecha_creacion: datetime
 
     class Config:
         from_attributes = True
