@@ -1,26 +1,26 @@
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import text
 from database import get_db
 import crud
-from schemas import IoCCreate, IoCResponse
+from schemas import IoCCreate, IoCResponse, UserCreate, UserResponse
 from typing import List
 from datetime import datetime
 import matplotlib.pyplot as plt
 from io import BytesIO
 from reportlab.lib import colors
 from reportlab.lib.pagesizes import letter
-from reportlab.pdfgen import canvas
-from reportlab.lib.utils import ImageReader
-from models import IoC  # Modelo de la base de datos
+from models import IoC, User  # Modelo de la base de datos
 import pandas as pd
 from fastapi.responses import Response
 from reportlab.platypus import SimpleDocTemplate, Table, TableStyle, Image, Paragraph, Spacer
 from reportlab.lib.styles import getSampleStyleSheet
+from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
 
 
 
 router = APIRouter()
+oauth2_scheme = OAuth2PasswordBearer(tokenUrl="login")
 
 #Obtener IoCs
 @router.get("/iocs", response_model=List[IoCResponse])
@@ -163,3 +163,15 @@ async def generate_report(start_date: str, end_date: str, clientes: str, db: Asy
         media_type="application/pdf",
         headers={"Content-Disposition": "attachment; filename=Reporte_IoCs.pdf"}
     )
+
+@router.post("/register", response_model=UserResponse)
+async def register_user(user: UserCreate, db: AsyncSession = Depends(get_db)):
+    return await crud.register_user(user, db)
+
+@router.post("/login")
+async def login_user(form_data: OAuth2PasswordRequestForm = Depends(), db: AsyncSession = Depends(get_db)):
+    return await crud.login_user(form_data, db)
+
+@router.get("/user_token")
+async def get_current_user(token: str = Depends(oauth2_scheme), db: AsyncSession = Depends(get_db)):
+    return await crud.get_current_user(token, db)

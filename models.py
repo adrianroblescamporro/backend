@@ -1,4 +1,4 @@
-from sqlalchemy import Column, Integer, String, Text, Boolean, TIMESTAMP, func
+from sqlalchemy import Column, Integer, Enum, String, Text, Boolean, TIMESTAMP, func
 from sqlalchemy.ext.declarative import declarative_base
 
 Base = declarative_base()
@@ -17,3 +17,11 @@ class IoC(Base):
     criticidad = Column(String(20), index=True)  # Crítica, Alta, Media, Baja
     usuario_registro = Column(String(20), index=True)
     fecha_creacion = Column(TIMESTAMP, server_default=func.now())
+
+class User(Base):
+    __tablename__ = "users"
+
+    id = Column(Integer, primary_key=True, index=True)
+    username = Column(String(50), unique=True, nullable=False)
+    hashed_password = Column(String, nullable=False)
+    role = Column(Enum("admin", "analista", "lector", name="user_roles"), nullable=False)
