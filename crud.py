@@ -29,8 +29,12 @@ async def create_ioc(db: AsyncSession, ioc_data: IoCCreate):
     return new_ioc
 
 async def register_user(user: UserCreate, db: AsyncSession):
-    existing_user = await db.execute(User.select().where(User.username == user.username))
-    if existing_user.scalars().first():
+    # Verificar si el usuario ya existe
+    stmt = select(User).where(User.username == user.username)
+    result = await db.execute(stmt)
+    existing_user = result.scalars().first()
+    
+    if existing_user:
         raise HTTPException(status_code=400, detail="El usuario ya existe")
 
     hashed_password = get_password_hash(user.password)
@@ -41,8 +45,9 @@ async def register_user(user: UserCreate, db: AsyncSession):
     return new_user
 
 async def login_user(form_data: OAuth2PasswordRequestForm, db: AsyncSession):
-    user = await db.execute(User.select().where(User.username == form_data.username))
-    user = user.scalars().first()
+    stmt = select(User).where(User.username == form_data.username)
+    result = await db.execute(stmt)
+    user = result.scalars().first()
     
     if not user or not verify_password(form_data.password, user.hashed_password):
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Credenciales inválidas")
