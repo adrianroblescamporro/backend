@@ -1,5 +1,7 @@
 from pydantic import BaseModel, Field
 from datetime import datetime
+from typing import Optional
+
 
 class IoCBase(BaseModel):
     tipo: str
@@ -17,6 +19,16 @@ class IoCCreate(IoCBase):
 
 class IoCResponse(IoCBase):
     id: int
+
+class IoCUpdate(BaseModel):
+    tipo: Optional[str]
+    valor: Optional[str]
+    cliente: Optional[str]
+    categoria: Optional[str]
+    tecnologia_deteccion: Optional[str]
+    pertenece_a_incidente: Optional[bool]
+    criticidad: Optional[str]
+    fecha_creacion: Optional[datetime]
 
 class UserCreate(BaseModel):
     username: str

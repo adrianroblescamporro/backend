@@ -1,9 +1,10 @@
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import text
+from sqlalchemy.future import select
 from database import get_db
 import crud
-from schemas import IoCCreate, IoCResponse, UserCreate, UserResponse
+from schemas import IoCCreate, IoCResponse, IoCUpdate, UserCreate, UserResponse
 from typing import List
 from datetime import datetime
 import matplotlib.pyplot as plt
@@ -31,6 +32,26 @@ async def read_iocs(db: AsyncSession = Depends(get_db)):
 @router.post("/iocs", response_model=IoCResponse)
 async def create_ioc(ioc: IoCCreate, db: AsyncSession = Depends(get_db)):
     return await crud.create_ioc(db, ioc)
+
+#Actualizar IoC
+@router.put("/iocs/{ioc_id}", response_model=IoCUpdate)
+async def update_ioc(ioc_id: int, ioc_data: IoCUpdate, db: AsyncSession = Depends(get_db)):
+    stmt = select(IoC).where(IoC.id == ioc_id)
+    result = await db.execute(stmt)
+    ioc = result.scalars().first()
+
+    if not ioc:
+        raise HTTPException(status_code=404, detail="IoC no encontrado")
+
+    # Excluir el usuario_registro de la actualización
+    update_data = ioc_data.dict(exclude_unset=True, exclude={"usuario_registro"})
+
+    for key, value in update_data.items():
+        setattr(ioc, key, value)
+
+    await db.commit()
+    await db.refresh(ioc)
+    return ioc
 
 #Generar reportes en pdf
 @router.get("/generate_report")
