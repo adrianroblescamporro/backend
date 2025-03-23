@@ -5,7 +5,8 @@ from models import IoC, User
 from schemas import IoCCreate, UserCreate, UserResponse
 from security import get_password_hash, verify_password, create_access_token, decode_access_token
 from fastapi.security import OAuth2PasswordRequestForm
-
+import pyotp
+import qrcode
 
 #Función para obtener IoCs
 async def get_iocs(db: AsyncSession):
@@ -59,3 +60,10 @@ async def get_current_user(token: str, db: AsyncSession):
     payload = decode_access_token(token)
     user = await db.execute(User.select().where(User.username == payload["sub"]))
     return user.scalars().first()
+
+# MFA
+async def generate_mfa_secret(user: User, db: AsyncSession):
+    secret = pyotp.random_base32()
+    user.mfa_secret = secret
+    await db.commit()
+    return secret

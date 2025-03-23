@@ -17,6 +17,8 @@ from fastapi.responses import Response
 from reportlab.platypus import SimpleDocTemplate, Table, TableStyle, Image, Paragraph, Spacer
 from reportlab.lib.styles import getSampleStyleSheet
 from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
+import pyotp
+import qrcode
 
 
 
@@ -196,3 +198,23 @@ async def login_user(form_data: OAuth2PasswordRequestForm = Depends(), db: Async
 @router.get("/user_token")
 async def get_current_user(token: str = Depends(oauth2_scheme), db: AsyncSession = Depends(get_db)):
     return await crud.get_current_user(token, db)
+
+@router.get("/mfa/qrcode/{username}")
+async def generate_qr(username: str, db: AsyncSession = Depends(get_db)):
+    user = await db.execute(select(User).where(User.username == username))
+    user = user.scalars().first()
+
+    if not user:
+        raise HTTPException(status_code=404, detail="Usuario no encontrado")
+
+    secret = await crud.generate_mfa_secret(user, db)
+    otp_auth_url = pyotp.totp.TOTP(secret).provisioning_uri(
+        username, issuer_name="TuAplicacion"
+    )
+
+    qr = qrcode.make(otp_auth_url)
+    buffer = BytesIO()
+    qr.save(buffer, format="PNG")
+    buffer.seek(0)
+
+    return Response(buffer.read(), media_type="image/png")
