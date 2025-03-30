@@ -4,7 +4,7 @@ from sqlalchemy import text
 from sqlalchemy.future import select
 from database import get_db
 import crud
-from schemas import IoCCreate, IoCResponse, IoCUpdate, UserCreate, UserResponse
+from schemas import IoCCreate, IoCResponse, IoCUpdate, UserCreate, UserResponse, LoginRequest
 from typing import List
 from datetime import datetime
 import matplotlib.pyplot as plt
@@ -192,7 +192,7 @@ async def register_user(user: UserCreate, db: AsyncSession = Depends(get_db)):
     return await crud.register_user(user, db)
 
 @router.post("/login")
-async def login_user(form_data: OAuth2PasswordRequestForm = Depends(), db: AsyncSession = Depends(get_db)):
+async def login_user(form_data: LoginRequest, db: AsyncSession = Depends(get_db)):
     return await crud.login_user(form_data, db)
 
 @router.get("/user_token")
@@ -200,16 +200,18 @@ async def get_current_user(token: str = Depends(oauth2_scheme), db: AsyncSession
     return await crud.get_current_user(token, db)
 
 @router.get("/mfa/qrcode/{username}")
-async def generate_qr(username: str, db: AsyncSession = Depends(get_db)):
+async def get_mfa_qr(username: str, db: AsyncSession = Depends(get_db)):
     user = await db.execute(select(User).where(User.username == username))
     user = user.scalars().first()
 
     if not user:
         raise HTTPException(status_code=404, detail="Usuario no encontrado")
 
-    secret = await crud.generate_mfa_secret(user, db)
-    otp_auth_url = pyotp.totp.TOTP(secret).provisioning_uri(
-        username, issuer_name="TuAplicacion"
+    if user.mfa_enabled:
+        raise HTTPException(status_code=400, detail="MFA ya está activado")
+
+    otp_auth_url = pyotp.totp.TOTP(user.mfa_secret).provisioning_uri(
+        user.username, issuer_name="IoCManagement"
     )
 
     qr = qrcode.make(otp_auth_url)
@@ -218,3 +220,7 @@ async def generate_qr(username: str, db: AsyncSession = Depends(get_db)):
     buffer.seek(0)
 
     return Response(buffer.read(), media_type="image/png")
+
+@router.post("/mfa/verify")
+async def verify_mfa(form_data: OAuth2PasswordRequestForm=Depends(), db: AsyncSession = Depends(get_db)):
+    return await crud.verify_mfa(form_data, db)

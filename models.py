@@ -25,3 +25,5 @@ class User(Base):
     username = Column(String(50), unique=True, nullable=False)
     hashed_password = Column(String, nullable=False)
     role = Column(Enum("admin", "analista", "lector", name="user_roles"), nullable=False)
+    mfa_secret = Column(String, nullable=True)  # Clave MFA
+    mfa_enabled = Column(Boolean, default=False)  # Indica si MFA está activo
