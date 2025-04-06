@@ -55,6 +55,20 @@ async def update_ioc(ioc_id: int, ioc_data: IoCUpdate, db: AsyncSession = Depend
     await db.refresh(ioc)
     return ioc
 
+#Eliminar IoC
+@router.delete("/iocs/{ioc_id}")
+async def delete_ioc(ioc_id: int, db: AsyncSession = Depends(get_db)):
+    stmt = select(IoC).where(IoC.id == ioc_id)
+    result = await db.execute(stmt)
+    ioc = result.scalars().first()
+
+    if not ioc:
+        raise HTTPException(status_code=404, detail="IoC no encontrado")
+
+    await db.delete(ioc)
+    await db.commit()
+    return {"message": "IoC eliminado correctamente"}
+
 #Generar reportes en pdf
 @router.get("/generate_report")
 async def generate_report(start_date: str, end_date: str, clientes: str, db: AsyncSession = Depends(get_db)):
