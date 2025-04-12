@@ -6,6 +6,7 @@ from schemas import IoCCreate, UserCreate, LoginRequest
 from security import get_password_hash, verify_password, create_access_token, decode_access_token
 from fastapi.security import OAuth2PasswordRequestForm
 import pyotp
+import ipaddress
 
 
 #Función para obtener IoCs
@@ -23,6 +24,15 @@ async def create_ioc(db: AsyncSession, ioc_data: IoCCreate):
     if existing_ioc:
         raise HTTPException(status_code=400, detail="El IoC ya existe en la base de datos.")
     
+    # Validar que si el tipo es IP, no sea privada
+    if ioc_data.tipo.lower() == "ip":
+        try:
+            ip = ipaddress.ip_address(ioc_data.valor)
+            if ip.is_private:
+                raise HTTPException(status_code=400, detail="No se permiten direcciones IP privadas.")
+        except ValueError:
+            raise HTTPException(status_code=400, detail="El valor ingresado no es una IP válida.")
+        
     new_ioc = IoC(**ioc_data.dict())
     db.add(new_ioc)
     await db.commit()

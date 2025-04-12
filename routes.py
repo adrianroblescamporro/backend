@@ -13,7 +13,7 @@ from reportlab.lib import colors
 from reportlab.lib.pagesizes import letter
 from models import IoC, User  # Modelo de la base de datos
 import pandas as pd
-from fastapi.responses import Response
+from fastapi.responses import Response, PlainTextResponse
 from reportlab.platypus import SimpleDocTemplate, Table, TableStyle, Image, Paragraph, Spacer
 from reportlab.lib.styles import getSampleStyleSheet
 from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
@@ -200,6 +200,17 @@ async def generate_report(start_date: str, end_date: str, clientes: str, db: Asy
         media_type="application/pdf",
         headers={"Content-Disposition": "attachment; filename=Reporte_IoCs.pdf"}
     )
+
+#Generar archivos edl
+@router.get("/report/edl", response_class=PlainTextResponse)
+async def generar_edl(tipo: str, cliente: str, db: AsyncSession = Depends(get_db)):
+    stmt = select(IoC).where(IoC.tipo == tipo, IoC.cliente == cliente)
+    result = await db.execute(stmt)
+    iocs = result.scalars().all()
+
+    edl_content = "\n".join(ioc.valor for ioc in iocs)
+
+    return PlainTextResponse(content=edl_content, media_type="text/plain")
 
 @router.post("/register", response_model=UserResponse)
 async def register_user(user: UserCreate, db: AsyncSession = Depends(get_db)):
