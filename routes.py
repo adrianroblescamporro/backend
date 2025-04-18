@@ -17,6 +17,7 @@ from fastapi.responses import Response, PlainTextResponse
 from reportlab.platypus import SimpleDocTemplate, Table, TableStyle, Image, Paragraph, Spacer
 from reportlab.lib.styles import getSampleStyleSheet
 from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
+from ioc_enrichment.manager import enrich_ioc
 import pyotp
 import qrcode
 
@@ -249,3 +250,8 @@ async def get_mfa_qr(username: str, db: AsyncSession = Depends(get_db)):
 @router.post("/mfa/verify")
 async def verify_mfa(form_data: OAuth2PasswordRequestForm=Depends(), db: AsyncSession = Depends(get_db)):
     return await crud.verify_mfa(form_data, db)
+
+#Enriquecer IoCs
+@router.get("/ioc/enrich/{ioc}")
+async def enrich_ioc_endpoint(ioc: str):
+    return await enrich_ioc(ioc)
