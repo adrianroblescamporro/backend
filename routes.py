@@ -4,14 +4,14 @@ from sqlalchemy import text
 from sqlalchemy.future import select
 from database import get_db
 import crud
-from schemas import IoCCreate, IoCResponse, IoCUpdate, UserCreate, UserResponse, LoginRequest
+from schemas import IoCCreate, IoCResponse, IncidenteCreate, IncidenteResponse, IoCUpdate, UserCreate, UserResponse, LoginRequest
 from typing import List
 from datetime import datetime
 import matplotlib.pyplot as plt
 from io import BytesIO
 from reportlab.lib import colors
 from reportlab.lib.pagesizes import letter
-from models import IoC, User  # Modelo de la base de datos
+from models import IoC, User, Incidente  # Modelo de la base de datos
 import pandas as pd
 from fastapi.responses import Response, PlainTextResponse
 from reportlab.platypus import SimpleDocTemplate, Table, TableStyle, Image, Paragraph, Spacer
@@ -255,3 +255,63 @@ async def verify_mfa(form_data: OAuth2PasswordRequestForm=Depends(), db: AsyncSe
 @router.get("/ioc/enrich/{ioc}")
 async def enrich_ioc_endpoint(ioc: str):
     return await enrich_ioc(ioc)
+
+# Crear nuevo incidente
+@router.post("/incidentes", response_model=IncidenteResponse)
+async def crear_incidente(incidente: IncidenteCreate, db: AsyncSession = Depends(get_db)):
+    nuevo_incidente = Incidente(**incidente.dict())
+    db.add(nuevo_incidente)
+    await db.commit()
+    await db.refresh(nuevo_incidente)
+    return nuevo_incidente
+
+# Asociar IoC a incidente
+@router.post("/incidentes/{incidente_id}/add_ioc/{ioc_id}")
+async def asociar_ioc_a_incidente(incidente_id: int, ioc_id: int, db: AsyncSession = Depends(get_db)):
+    incidente = await db.get(Incidente, incidente_id)
+    ioc = await db.get(IoC, ioc_id)
+
+    if not incidente or not ioc:
+        raise HTTPException(status_code=404, detail="IoC o Incidente no encontrado")
+
+    if ioc not in incidente.iocs:
+        incidente.iocs.append(ioc)
+        await db.commit()
+
+    return {"message": f"IoC {ioc_id} asociado al incidente {incidente_id}"}
+
+#Eliminar IoC asociado a un incidente
+@router.delete("/incidentes/{incidente_id}/remove_ioc/{ioc_id}")
+async def remove_ioc_from_incidente(
+    incidente_id: int,
+    ioc_id: int,
+    db: AsyncSession = Depends(get_db)
+):
+    incidente = await db.get(Incidente, incidente_id)
+    ioc = await db.get(IoC, ioc_id)
+
+    if not incidente or not ioc:
+        raise HTTPException(status_code=404, detail="Incidente o IoC no encontrado")
+
+    if ioc not in incidente.iocs:
+        raise HTTPException(status_code=400, detail="El IoC no está asociado a este incidente")
+
+    incidente.iocs.remove(ioc)
+    await db.commit()
+
+    return {"message": "IoC desasociado correctamente del incidente"}
+
+# Obtener todos los incidentes con sus IoCs
+@router.get("/incidentes", response_model=List[IncidenteResponse])
+async def listar_incidentes(db: AsyncSession = Depends(get_db)):
+    result = await db.execute(select(Incidente))
+    return result.scalars().all()
+
+# Obtener los IoCs de un incidente
+@router.get("/incidentes/{incidente_id}/iocs", response_model=List[IoCResponse])
+async def obtener_iocs_de_incidente(incidente_id: int, db: AsyncSession = Depends(get_db)):
+    incidente = await db.get(Incidente, incidente_id)
+    if not incidente:
+        raise HTTPException(status_code=404, detail="Incidente no encontrado")
+
+    return incidente.iocs

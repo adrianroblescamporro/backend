@@ -1,6 +1,6 @@
 from pydantic import BaseModel, Field
 from datetime import datetime
-from typing import Optional
+from typing import Optional, List
 
 
 class IoCBase(BaseModel):
@@ -17,8 +17,30 @@ class IoCBase(BaseModel):
 class IoCCreate(IoCBase):
     pass
 
+class IncidenteBase(BaseModel):
+    nombre: str
+    descripcion: Optional[str] = ""
+    cliente: str
+    fecha_incidente: datetime
+    usuario_creador: str
+
+class IncidenteCreate(IncidenteBase):
+    pass
+
+class IncidenteResponse(IncidenteBase):
+    id: int
+    iocs: List["IoCResponse"] = []
+
+    class Config:
+        orm_mode = True
+
 class IoCResponse(IoCBase):
     id: int
+    incidentes: List["IncidenteResponse"] = []
+
+    class Config:
+        orm_mode = True
+
 
 class IoCUpdate(BaseModel):
     tipo: Optional[str]
@@ -47,3 +69,7 @@ class LoginRequest(BaseModel):
        
     class Config:
         from_attributes = True
+
+
+IoCResponse.update_forward_refs()
+IncidenteResponse.update_forward_refs()
