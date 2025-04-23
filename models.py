@@ -25,7 +25,6 @@ class IoC(Base):
         secondary="ioc_incidente",
         back_populates="iocs",
         lazy="selectin"
-
     )
 
 class User(Base):
@@ -53,8 +52,6 @@ class Incidente(Base):
         secondary="ioc_incidente",
         back_populates="incidentes",
         lazy="selectin"
-
-
     )
 
 class IoCIncidente(Base):

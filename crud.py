@@ -1,7 +1,8 @@
 from fastapi import HTTPException, status
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.future import select
-from models import IoC, User
+from sqlalchemy.orm import selectinload
+from models import IoC, User, Incidente
 from schemas import IoCCreate, UserCreate, LoginRequest
 from security import get_password_hash, verify_password, create_access_token, decode_access_token
 from fastapi.security import OAuth2PasswordRequestForm
@@ -11,8 +12,13 @@ import ipaddress
 
 #Función para obtener IoCs
 async def get_iocs(db: AsyncSession):
-    result = await db.execute(select(IoC))
-    return result.scalars().all()
+    result = await db.execute(
+        select(IoC).options(
+            selectinload(IoC.incidentes).selectinload(Incidente.iocs)
+        )
+    )
+    iocs = result.scalars().all()
+    return iocs
 
 #Función para crear IoCs
 async def create_ioc(db: AsyncSession, ioc_data: IoCCreate):

@@ -2,6 +2,7 @@ from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import text
 from sqlalchemy.future import select
+from sqlalchemy.orm import selectinload
 from database import get_db
 import crud
 from schemas import IoCCreate, IoCResponse, IncidenteCreate, IncidenteResponse, IoCUpdate, UserCreate, UserResponse, LoginRequest
@@ -303,14 +304,27 @@ async def remove_ioc_from_incidente(
 
 # Obtener todos los incidentes con sus IoCs
 @router.get("/incidentes", response_model=List[IncidenteResponse])
-async def listar_incidentes(db: AsyncSession = Depends(get_db)):
-    result = await db.execute(select(Incidente))
-    return result.scalars().all()
+async def obtener_incidentes(db: AsyncSession = Depends(get_db)):
+    result = await db.execute(
+        select(Incidente)
+        .options(
+            selectinload(Incidente.iocs).selectinload(IoC.incidentes)
+        )
+    )
+    incidentes = result.scalars().all()
+    return incidentes
 
 # Obtener los IoCs de un incidente
 @router.get("/incidentes/{incidente_id}/iocs", response_model=List[IoCResponse])
 async def obtener_iocs_de_incidente(incidente_id: int, db: AsyncSession = Depends(get_db)):
-    incidente = await db.get(Incidente, incidente_id)
+    stmt = (
+        select(Incidente)
+        .where(Incidente.id == incidente_id)
+        .options(selectinload(Incidente.iocs).selectinload(IoC.incidentes))
+    )
+    result = await db.execute(stmt)
+    incidente = result.scalars().first()
+
     if not incidente:
         raise HTTPException(status_code=404, detail="Incidente no encontrado")
 
