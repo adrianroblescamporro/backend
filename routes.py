@@ -329,3 +329,18 @@ async def obtener_iocs_de_incidente(incidente_id: int, db: AsyncSession = Depend
         raise HTTPException(status_code=404, detail="Incidente no encontrado")
 
     return incidente.iocs
+
+#Obtener los incidentes de un IoC
+@router.get("/iocs/{ioc_id}/incidentes", response_model=List[IncidenteResponse])
+async def obtener_incidentes_de_ioc(ioc_id: int, db: AsyncSession = Depends(get_db)):
+    result = await db.execute(
+        select(IoC)
+        .where(IoC.id == ioc_id)
+        .options(selectinload(IoC.incidentes))
+    )
+    ioc = result.scalars().first()
+
+    if not ioc:
+        raise HTTPException(status_code=404, detail="IoC no encontrado")
+
+    return ioc.incidentes
