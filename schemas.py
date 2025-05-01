@@ -6,6 +6,12 @@ class IoCRef(BaseModel):
     id: int
     tipo: str
     valor: str
+    cliente: str
+    categoria: str
+    tecnologia_deteccion: str
+    criticidad: str
+    usuario_registro: str
+    fecha_creacion: datetime
 
     class Config:
         orm_mode = True
