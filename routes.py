@@ -336,7 +336,9 @@ async def obtener_incidentes_de_ioc(ioc_id: int, db: AsyncSession = Depends(get_
     result = await db.execute(
         select(IoC)
         .where(IoC.id == ioc_id)
-        .options(selectinload(IoC.incidentes))
+        .options(
+            selectinload(IoC.incidentes).selectinload(Incidente.iocs)  # 👈 Clave aquí
+        )
     )
     ioc = result.scalars().first()
 
