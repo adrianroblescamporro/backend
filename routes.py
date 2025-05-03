@@ -12,7 +12,7 @@ import matplotlib.pyplot as plt
 from io import BytesIO
 from reportlab.lib import colors
 from reportlab.lib.pagesizes import letter
-from models import IoC, User, Incidente  # Modelo de la base de datos
+from models import IoC, User, Incidente, EnriquecimientoIoC  # Modelo de la base de datos
 import pandas as pd
 from fastapi.responses import Response, PlainTextResponse
 from reportlab.platypus import SimpleDocTemplate, Table, TableStyle, Image, Paragraph, Spacer
@@ -21,7 +21,7 @@ from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
 from ioc_enrichment.manager import enrich_ioc
 import pyotp
 import qrcode
-
+import json
 
 
 router = APIRouter()
@@ -254,8 +254,33 @@ async def verify_mfa(form_data: OAuth2PasswordRequestForm=Depends(), db: AsyncSe
 
 #Enriquecer IoCs
 @router.get("/ioc/enrich/{ioc}")
-async def enrich_ioc_endpoint(ioc: str):
-    return await enrich_ioc(ioc)
+async def enrich_ioc_endpoint(ioc: str, db: AsyncSession = Depends(get_db)):
+    #Buscar si ya está enriquecido
+    result = await db.execute(
+        select(EnriquecimientoIoC).where(EnriquecimientoIoC.valor_ioc == ioc)
+    )
+    cached = result.scalar_one_or_none()
+
+    if cached:
+        #Si lo está, devolverlo directamente
+        return json.loads(cached.datos_json)
+
+    #Enriquecer con los analizadores
+    enriched = await enrich_ioc(ioc)
+
+    #Serializar y guardar el resultado en la base de datos
+    datos_json = json.dumps([r.model_dump() for r in enriched], default=str)
+
+    nuevo = EnriquecimientoIoC(
+        valor_ioc=ioc,
+        datos_json=datos_json,
+        fecha_enriquecimiento=datetime.utcnow()
+    )
+    db.add(nuevo)
+    await db.commit()
+
+    #Devolver el resultado enriquecido
+    return [r.model_dump() for r in enriched]
 
 # Crear nuevo incidente
 @router.post("/incidentes", response_model=IncidenteResponse)

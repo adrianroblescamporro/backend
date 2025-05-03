@@ -27,6 +27,7 @@ class IoC(Base):
         lazy="selectin"
     )
 
+
 class User(Base):
     __tablename__ = "users"
 
@@ -59,3 +60,11 @@ class IoCIncidente(Base):
 
     ioc_id = Column(Integer, ForeignKey("iocs.id"), primary_key=True)
     incidente_id = Column(Integer, ForeignKey("incidentes.id"), primary_key=True)
+
+class EnriquecimientoIoC(Base):
+    __tablename__ = "enriquecimientos_iocs"
+
+    id = Column(Integer, primary_key=True)
+    valor_ioc = Column(String, unique=True, index=True)
+    datos_json = Column(Text)  # o JSON si tu DB lo soporta
+    fecha_enriquecimiento = Column(TIMESTAMP, server_default=func.now())
