@@ -252,6 +252,10 @@ async def get_mfa_qr(username: str, db: AsyncSession = Depends(get_db)):
 async def verify_mfa(form_data: OAuth2PasswordRequestForm=Depends(), db: AsyncSession = Depends(get_db)):
     return await crud.verify_mfa(form_data, db)
 
+@router.get("/api/auth/verify-token")
+async def verify_token_route(token: str = Depends(oauth2_scheme)):
+    return await crud.verify_token_route(token)
+
 #Enriquecer IoCs
 @router.get("/ioc/enrich/{ioc}")
 async def enrich_ioc_endpoint(ioc: str, db: AsyncSession = Depends(get_db)):

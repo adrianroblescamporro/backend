@@ -102,3 +102,9 @@ async def verify_mfa(form_data: OAuth2PasswordRequestForm, db: AsyncSession):
     await db.commit()
 
     return {"message": "MFA activado correctamente"}
+
+async def verify_token_route(token: str):
+    payload = decode_access_token(token)
+    if payload is None:
+        raise HTTPException(status_code=401, detail="Token inválido o expirado")
+    return {"status": "valid"}
