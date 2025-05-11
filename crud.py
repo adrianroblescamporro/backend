@@ -57,7 +57,7 @@ async def register_user(user: UserCreate, db: AsyncSession):
     hashed_password = get_password_hash(user.password)
     # Generar clave MFA
     mfa_secret = pyotp.random_base32()
-    new_user = User(username=user.username, hashed_password=hashed_password, role=user.role, mfa_secret=mfa_secret,mfa_enabled=False)
+    new_user = User(username=user.username, hashed_password=hashed_password, role=user.role, mfa_secret=mfa_secret,mfa_enabled=False, enterprise=user.enterprise)
     
     db.add(new_user)
     await db.commit()
@@ -79,7 +79,7 @@ async def login_user(form_data: LoginRequest, db: AsyncSession):
     if not totp.verify(form_data.mfa_code):
         raise HTTPException(status_code=401, detail="Código MFA incorrecto")
     
-    token = create_access_token({"sub": user.username, "role": user.role})
+    token = create_access_token({"sub": user.username, "role": user.role, "enterprise": user.enterprise})
     return {"access_token": token, "token_type": "bearer"}
 
 async def get_current_user(token: str, db: AsyncSession):
