@@ -6,9 +6,9 @@ from jose import JWTError, jwt
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
 # Clave secreta para JWT (debe mantenerse en un entorno seguro)
-SECRET_KEY = "tu_clave_secreta_super_segura"  # Cambia esto por una clave segura
+SECRET_KEY = "9d8fe14f22d24563bb7d7fcdf875b6373a5ed66d054f4f67c7f1a3c1b27ea145"  # Cambia esto por una clave segura
 ALGORITHM = "HS256"
-ACCESS_TOKEN_EXPIRE_MINUTES = 5  # 1 hora de duración por defecto
+ACCESS_TOKEN_EXPIRE_MINUTES = 60  # 1 hora de duración por defecto
 
 # Función para hashear contraseñas
 def get_password_hash(password: str) -> str:
