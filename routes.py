@@ -27,18 +27,22 @@ import json
 router = APIRouter()
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="login")
 
+#Verificar token
+async def verify_token(token: str = Depends(oauth2_scheme)):
+    return await crud.verify_token_route(token)
+
 #Obtener IoCs
-@router.get("/iocs", response_model=List[IoCResponse])
+@router.get("/iocs", response_model=List[IoCResponse], dependencies=[Depends(verify_token)])
 async def read_iocs(db: AsyncSession = Depends(get_db)):
     return await crud.get_iocs(db)
 
 #Crear nuevos IoCs
-@router.post("/iocs", response_model=IoCResponse)
+@router.post("/iocs", response_model=IoCResponse, dependencies=[Depends(verify_token)])
 async def create_ioc(ioc: IoCCreate, db: AsyncSession = Depends(get_db)):
     return await crud.create_ioc(db, ioc)
 
 #Actualizar IoC
-@router.put("/iocs/{ioc_id}", response_model=IoCUpdate)
+@router.put("/iocs/{ioc_id}", response_model=IoCUpdate, dependencies=[Depends(verify_token)])
 async def update_ioc(ioc_id: int, ioc_data: IoCUpdate, db: AsyncSession = Depends(get_db)):
     stmt = select(IoC).where(IoC.id == ioc_id)
     result = await db.execute(stmt)
@@ -58,7 +62,7 @@ async def update_ioc(ioc_id: int, ioc_data: IoCUpdate, db: AsyncSession = Depend
     return ioc
 
 #Eliminar IoC
-@router.delete("/iocs/{ioc_id}")
+@router.delete("/iocs/{ioc_id}", dependencies=[Depends(verify_token)])
 async def delete_ioc(ioc_id: int, db: AsyncSession = Depends(get_db)):
     stmt = select(IoC).where(IoC.id == ioc_id)
     result = await db.execute(stmt)
@@ -72,7 +76,7 @@ async def delete_ioc(ioc_id: int, db: AsyncSession = Depends(get_db)):
     return {"message": "IoC eliminado correctamente"}
 
 #Generar reportes en pdf
-@router.get("/generate_report")
+@router.get("/generate_report", dependencies=[Depends(verify_token)])
 async def generate_report(start_date: str, end_date: str, clientes: str, db: AsyncSession = Depends(get_db)):
     """
     Genera un reporte en PDF de los IoCs dentro del período de tiempo y clientes seleccionados.
@@ -204,7 +208,7 @@ async def generate_report(start_date: str, end_date: str, clientes: str, db: Asy
     )
 
 #Generar archivos edl
-@router.get("/report/edl", response_class=PlainTextResponse)
+@router.get("/report/edl", response_class=PlainTextResponse, dependencies=[Depends(verify_token)])
 async def generar_edl(tipo: str, cliente: str, db: AsyncSession = Depends(get_db)):
     stmt = select(IoC).where(IoC.tipo == tipo, IoC.cliente == cliente)
     result = await db.execute(stmt)
@@ -214,7 +218,7 @@ async def generar_edl(tipo: str, cliente: str, db: AsyncSession = Depends(get_db
 
     return PlainTextResponse(content=edl_content, media_type="text/plain")
 
-@router.post("/register", response_model=UserResponse)
+@router.post("/register", response_model=UserResponse, dependencies=[Depends(verify_token)])
 async def register_user(user: UserCreate, db: AsyncSession = Depends(get_db)):
     return await crud.register_user(user, db)
 
@@ -252,12 +256,8 @@ async def get_mfa_qr(username: str, db: AsyncSession = Depends(get_db)):
 async def verify_mfa(form_data: OAuth2PasswordRequestForm=Depends(), db: AsyncSession = Depends(get_db)):
     return await crud.verify_mfa(form_data, db)
 
-@router.get("/api/auth/verify-token")
-async def verify_token_route(token: str = Depends(oauth2_scheme)):
-    return await crud.verify_token_route(token)
-
 #Enriquecer IoCs
-@router.get("/ioc/enrich/{ioc}")
+@router.get("/ioc/enrich/{ioc}", dependencies=[Depends(verify_token)])
 async def enrich_ioc_endpoint(ioc: str, db: AsyncSession = Depends(get_db)):
     #Buscar si ya está enriquecido
     result = await db.execute(
@@ -287,7 +287,7 @@ async def enrich_ioc_endpoint(ioc: str, db: AsyncSession = Depends(get_db)):
     return [r.model_dump() for r in enriched]
 
 # Crear nuevo incidente
-@router.post("/incidentes", response_model=IncidenteResponse)
+@router.post("/incidentes", response_model=IncidenteResponse, dependencies=[Depends(verify_token)])
 async def crear_incidente(incidente: IncidenteCreate, db: AsyncSession = Depends(get_db)):
     nuevo_incidente = Incidente(**incidente.dict())
     db.add(nuevo_incidente)
@@ -296,7 +296,7 @@ async def crear_incidente(incidente: IncidenteCreate, db: AsyncSession = Depends
     return nuevo_incidente
 
 # Asociar IoC a incidente
-@router.post("/incidentes/{incidente_id}/add_ioc/{ioc_id}")
+@router.post("/incidentes/{incidente_id}/add_ioc/{ioc_id}", dependencies=[Depends(verify_token)])
 async def asociar_ioc_a_incidente(incidente_id: int, ioc_id: int, db: AsyncSession = Depends(get_db)):
     incidente = await db.get(Incidente, incidente_id)
     ioc = await db.get(IoC, ioc_id)
@@ -311,7 +311,7 @@ async def asociar_ioc_a_incidente(incidente_id: int, ioc_id: int, db: AsyncSessi
     return {"message": f"IoC {ioc_id} asociado al incidente {incidente_id}"}
 
 #Eliminar IoC asociado a un incidente
-@router.delete("/incidentes/{incidente_id}/remove_ioc/{ioc_id}")
+@router.delete("/incidentes/{incidente_id}/remove_ioc/{ioc_id}", dependencies=[Depends(verify_token)])
 async def remove_ioc_from_incidente(
     incidente_id: int,
     ioc_id: int,
@@ -332,7 +332,7 @@ async def remove_ioc_from_incidente(
     return {"message": "IoC desasociado correctamente del incidente"}
 
 # Obtener todos los incidentes con sus IoCs
-@router.get("/incidentes", response_model=List[IncidenteResponse])
+@router.get("/incidentes", response_model=List[IncidenteResponse], dependencies=[Depends(verify_token)])
 async def obtener_incidentes(db: AsyncSession = Depends(get_db)):
     result = await db.execute(
         select(Incidente)
@@ -344,7 +344,7 @@ async def obtener_incidentes(db: AsyncSession = Depends(get_db)):
     return incidentes
 
 # Obtener los IoCs de un incidente
-@router.get("/incidentes/{incidente_id}/iocs", response_model=List[IoCResponse])
+@router.get("/incidentes/{incidente_id}/iocs", response_model=List[IoCResponse], dependencies=[Depends(verify_token)])
 async def obtener_iocs_de_incidente(incidente_id: int, db: AsyncSession = Depends(get_db)):
     stmt = (
         select(Incidente)
@@ -360,7 +360,7 @@ async def obtener_iocs_de_incidente(incidente_id: int, db: AsyncSession = Depend
     return incidente.iocs
 
 #Obtener los incidentes de un IoC
-@router.get("/iocs/{ioc_id}/incidentes", response_model=List[IncidenteResponse])
+@router.get("/iocs/{ioc_id}/incidentes", response_model=List[IncidenteResponse], dependencies=[Depends(verify_token)])
 async def obtener_incidentes_de_ioc(ioc_id: int, db: AsyncSession = Depends(get_db)):
     result = await db.execute(
         select(IoC)

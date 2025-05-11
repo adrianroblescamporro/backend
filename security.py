@@ -8,7 +8,7 @@ pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 # Clave secreta para JWT (debe mantenerse en un entorno seguro)
 SECRET_KEY = "tu_clave_secreta_super_segura"  # Cambia esto por una clave segura
 ALGORITHM = "HS256"
-ACCESS_TOKEN_EXPIRE_MINUTES = 60  # 1 hora de duración por defecto
+ACCESS_TOKEN_EXPIRE_MINUTES = 5  # 1 hora de duración por defecto
 
 # Función para hashear contraseñas
 def get_password_hash(password: str) -> str:
@@ -31,4 +31,4 @@ def decode_access_token(token: str) -> dict:
         payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
         return payload  # Devuelve los datos del token si es válido
     except JWTError:
-        return None  # Devuelve None si el token no es válido
+        return None
