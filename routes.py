@@ -5,7 +5,7 @@ from sqlalchemy.future import select
 from sqlalchemy.orm import selectinload
 from database import get_db
 import crud
-from schemas import IoCCreate, IoCResponse, IncidenteCreate, IncidenteResponse, IoCUpdate, UserCreate, UserResponse, LoginRequest
+from schemas import IoCCreate, IoCResponse, IncidenteCreate, IncidenteResponse, IoCUpdate, UserCreate, UserResponse, LoginRequest, ChangePasswordRequest
 from typing import List
 from datetime import datetime
 import matplotlib.pyplot as plt
@@ -255,6 +255,11 @@ async def get_mfa_qr(username: str, db: AsyncSession = Depends(get_db)):
 @router.post("/mfa/verify")
 async def verify_mfa(form_data: OAuth2PasswordRequestForm=Depends(), db: AsyncSession = Depends(get_db)):
     return await crud.verify_mfa(form_data, db)
+
+#Actualizar contraseña
+@router.post("/users/change_password", dependencies=[Depends(verify_token)])
+async def change_password(request: ChangePasswordRequest, db: AsyncSession = Depends(get_db)):
+    return await crud.change_user_password(request.username, request.new_password, db)
 
 #Enriquecer IoCs
 @router.get("/ioc/enrich/{ioc}", dependencies=[Depends(verify_token)])

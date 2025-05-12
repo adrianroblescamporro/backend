@@ -84,6 +84,10 @@ class UserResponse(BaseModel):
     role: str
     enterprise: str
 
+class ChangePasswordRequest(BaseModel):
+    username: str
+    new_password: str
+
 class LoginRequest(BaseModel):
     username: str
     password: str

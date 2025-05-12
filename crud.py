@@ -77,10 +77,22 @@ async def login_user(form_data: LoginRequest, db: AsyncSession):
     # Verificar el código MFA
     totp = pyotp.TOTP(user.mfa_secret)
     if not totp.verify(form_data.mfa_code):
-        raise HTTPException(status_code=401, detail="Código MFA incorrecto")
-    
-    token = create_access_token({"sub": user.username, "role": user.role, "enterprise": user.enterprise})
-    return {"access_token": token, "token_type": "bearer"}
+        raise HTTPException(status_code=402, detail="Código MFA incorrecto")
+
+    # Generar token
+    token = create_access_token({
+        "sub": user.username,
+        "role": user.role,
+        "enterprise": user.enterprise
+    })
+
+    # Devolver token + bandera de cambio de contraseña
+    return {
+        "access_token": token,
+        "token_type": "bearer",
+        "must_change_password": user.must_change_password
+    }
+
 
 async def get_current_user(token: str, db: AsyncSession):
     payload = decode_access_token(token)
@@ -108,3 +120,17 @@ async def verify_token_route(token: str):
     if payload is None:
         raise HTTPException(status_code=401, detail="Token inválido o expirado")
     return payload
+
+async def change_user_password(username: str, new_password: str, db: AsyncSession):
+    result = await db.execute(select(User).where(User.username == username))
+    user = result.scalars().first()
+
+    if not user:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Usuario no encontrado")
+
+    user.hashed_password = get_password_hash(new_password)
+    user.must_change_password = False  # Marcar que ya no es el primer login
+
+    db.add(user)
+    await db.commit()
+    return {"message": "Contraseña actualizada correctamente"}

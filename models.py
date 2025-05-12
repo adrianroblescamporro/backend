@@ -38,6 +38,8 @@ class User(Base):
     enterprise = Column(String(50), nullable=False)
     mfa_secret = Column(String, nullable=True)  # Clave MFA
     mfa_enabled = Column(Boolean, default=False)  # Indica si MFA está activo
+    must_change_password = Column(Boolean, default=True)
+
 
 class Incidente(Base):
     __tablename__ = "incidentes"
