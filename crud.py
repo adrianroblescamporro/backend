@@ -77,7 +77,7 @@ async def login_user(form_data: LoginRequest, db: AsyncSession):
     # Verificar el código MFA
     totp = pyotp.TOTP(user.mfa_secret)
     if not totp.verify(form_data.mfa_code):
-        raise HTTPException(status_code=402, detail="Código MFA incorrecto")
+        raise HTTPException(status_code=400, detail="Código MFA incorrecto")
 
     # Generar token
     token = create_access_token({
