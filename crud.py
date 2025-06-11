@@ -11,14 +11,41 @@ import ipaddress
 
 
 #Función para obtener IoCs
-async def get_iocs(db: AsyncSession):
+async def get_iocs(db: AsyncSession, token: str):
+    payload = decode_access_token(token)
+    user_enterprise = payload["enterprise"]
     result = await db.execute(
         select(IoC).options(
             selectinload(IoC.incidentes).selectinload(Incidente.iocs)
         )
     )
     iocs = result.scalars().all()
+
+    # Modificar el campo cliente según el enterprise del usuario
+    for ioc in iocs:
+        if user_enterprise != "Todas" and ioc.cliente != user_enterprise:
+            ioc.cliente = "Otra empresa"
+
     return iocs
+
+#Función para obtener Incidentes
+async def get_incidentes(db: AsyncSession, token: str):
+    payload = decode_access_token(token)
+    user_enterprise = payload["enterprise"]
+    result = await db.execute(
+        select(Incidente)
+        .options(
+            selectinload(Incidente.iocs).selectinload(IoC.incidentes)
+        )
+    )
+    incidentes = result.scalars().all()
+
+    # Modificar el campo cliente según el enterprise del usuario
+    for incidente in incidentes:
+        if user_enterprise != "Todas" and incidente.cliente != user_enterprise:
+            incidente.cliente = "Otra empresa"
+
+    return incidentes
 
 #Función para crear IoCs
 async def create_ioc(db: AsyncSession, ioc_data: IoCCreate):

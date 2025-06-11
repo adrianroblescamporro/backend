@@ -6,7 +6,6 @@ class IoCRef(BaseModel):
     id: int
     tipo: str
     valor: str
-    cliente: str
     categoria: str
     tecnologia_deteccion: str
     criticidad: str

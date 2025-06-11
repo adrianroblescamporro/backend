@@ -33,8 +33,8 @@ async def verify_token(token: str = Depends(oauth2_scheme)):
 
 #Obtener IoCs
 @router.get("/iocs", response_model=List[IoCResponse], dependencies=[Depends(verify_token)])
-async def read_iocs(db: AsyncSession = Depends(get_db)):
-    return await crud.get_iocs(db)
+async def read_iocs(token: str = Depends(oauth2_scheme), db: AsyncSession = Depends(get_db)):
+    return await crud.get_iocs(db, token)
 
 #Crear nuevos IoCs
 @router.post("/iocs", response_model=IoCResponse, dependencies=[Depends(verify_token)])
@@ -338,15 +338,8 @@ async def remove_ioc_from_incidente(
 
 # Obtener todos los incidentes con sus IoCs
 @router.get("/incidentes", response_model=List[IncidenteResponse], dependencies=[Depends(verify_token)])
-async def obtener_incidentes(db: AsyncSession = Depends(get_db)):
-    result = await db.execute(
-        select(Incidente)
-        .options(
-            selectinload(Incidente.iocs).selectinload(IoC.incidentes)
-        )
-    )
-    incidentes = result.scalars().all()
-    return incidentes
+async def read_incidentes(token: str = Depends(oauth2_scheme), db: AsyncSession = Depends(get_db)):
+    return await crud.get_incidentes(db, token)
 
 # Obtener los IoCs de un incidente
 @router.get("/incidentes/{incidente_id}/iocs", response_model=List[IoCResponse], dependencies=[Depends(verify_token)])
@@ -371,7 +364,7 @@ async def obtener_incidentes_de_ioc(ioc_id: int, db: AsyncSession = Depends(get_
         select(IoC)
         .where(IoC.id == ioc_id)
         .options(
-            selectinload(IoC.incidentes).selectinload(Incidente.iocs)  # 👈 Clave aquí
+            selectinload(IoC.incidentes).selectinload(Incidente.iocs) 
         )
     )
     ioc = result.scalars().first()
