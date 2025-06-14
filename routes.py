@@ -310,6 +310,8 @@ async def asociar_ioc_a_incidente(incidente_id: int, ioc_id: int, db: AsyncSessi
         raise HTTPException(status_code=404, detail="IoC o Incidente no encontrado")
 
     if ioc not in incidente.iocs:
+        if ioc.pertenece_a_incidente == False:
+            ioc.pertenece_a_incidente = True
         incidente.iocs.append(ioc)
         await db.commit()
 
@@ -333,6 +335,14 @@ async def remove_ioc_from_incidente(
 
     incidente.iocs.remove(ioc)
     await db.commit()
+
+    # Volver a cargar el IoC con sus relaciones para verificar si quedó sin incidentes
+    await db.refresh(ioc)  # Asegura que esté actualizado
+    await db.refresh(incidente)  # Opcional, por consistencia
+
+    if not ioc.incidentes:
+        ioc.pertenece_a_incidente = False
+        await db.commit()
 
     return {"message": "IoC desasociado correctamente del incidente"}
 
